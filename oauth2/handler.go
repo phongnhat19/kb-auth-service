@@ -775,6 +775,7 @@ func (h *Handler) introspectOAuth2Token(w http.ResponseWriter, r *http.Request, 
 	}
 
 	w.Header().Set("Content-Type", "application/json;charset=UTF-8")
+	w.Header().Set("X-Client-ID", resp.GetAccessRequester().GetClient().GetID())
 	if err = json.NewEncoder(w).Encode(&Introspection{
 		Active:            resp.IsActive(),
 		ClientID:          resp.GetAccessRequester().GetClient().GetID(),
@@ -933,7 +934,6 @@ func (h *Handler) oauth2TokenExchange(w http.ResponseWriter, r *http.Request) {
 		h.r.OAuth2Provider().WriteAccessError(ctx, w, accessRequest, err)
 		return
 	}
-
 	h.r.OAuth2Provider().WriteAccessResponse(ctx, w, accessRequest, accessResponse)
 }
 
