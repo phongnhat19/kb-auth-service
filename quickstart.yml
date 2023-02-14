@@ -12,7 +12,8 @@
 version: "3.7"
 services:
   hydra:
-    image: oryd/hydra:v2.0.3
+    image: whydah/hydra
+    build: .
     ports:
       - "4444:4444" # Public port
       - "4445:4445" # Admin port
