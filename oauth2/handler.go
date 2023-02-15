@@ -710,26 +710,39 @@ func (h *Handler) introspectOAuth2Token(w http.ResponseWriter, r *http.Request, 
 	var session = NewSessionWithCustomClaims("", h.c.AllowedTopLevelClaims(r.Context()))
 	var ctx = r.Context()
 
-	if r.Method != "POST" {
-		err := errorsx.WithStack(fosite.ErrInvalidRequest.WithHintf("HTTP method is \"%s\", expected \"POST\".", r.Method))
-		x.LogError(r, err, h.r.Logger())
-		h.r.OAuth2Provider().WriteIntrospectionError(ctx, w, err)
-		return
-	} else if err := r.ParseMultipartForm(1 << 20); err != nil && err != http.ErrNotMultipart {
-		err := errorsx.WithStack(fosite.ErrInvalidRequest.WithHint("Unable to parse HTTP body, make sure to send a properly formatted form request body.").WithDebug(err.Error()))
-		x.LogError(r, err, h.r.Logger())
-		h.r.OAuth2Provider().WriteIntrospectionError(ctx, w, err)
-		return
-	} else if len(r.PostForm) == 0 {
-		err := errorsx.WithStack(fosite.ErrInvalidRequest.WithHint("The POST body can not be empty."))
-		x.LogError(r, err, h.r.Logger())
-		h.r.OAuth2Provider().WriteIntrospectionError(ctx, w, err)
-		return
-	}
+	token := ""
+	tokenType := ""
+	scope := ""
 
-	token := r.PostForm.Get("token")
-	tokenType := r.PostForm.Get("token_type_hint")
-	scope := r.PostForm.Get("scope")
+	// Get Header first
+	authHeader := r.Header.Clone().Get("Authorization")
+
+	if authHeader != "" {
+		token = strings.Replace(authHeader, "Bearer ", "", -1)
+		tokenType = r.Header.Clone().Get("type")
+		scope = r.Header.Clone().Get("scope")
+	} else {
+		if r.Method != "POST" {
+			err := errorsx.WithStack(fosite.ErrInvalidRequest.WithHintf("HTTP method is \"%s\", expected \"POST\".", r.Method))
+			x.LogError(r, err, h.r.Logger())
+			h.r.OAuth2Provider().WriteIntrospectionError(ctx, w, err)
+			return
+		} else if err := r.ParseMultipartForm(1 << 20); err != nil && err != http.ErrNotMultipart {
+			err := errorsx.WithStack(fosite.ErrInvalidRequest.WithHint("Unable to parse HTTP body, make sure to send a properly formatted form request body.").WithDebug(err.Error()))
+			x.LogError(r, err, h.r.Logger())
+			h.r.OAuth2Provider().WriteIntrospectionError(ctx, w, err)
+			return
+		} else if len(r.PostForm) == 0 {
+			err := errorsx.WithStack(fosite.ErrInvalidRequest.WithHint("The POST body can not be empty."))
+			x.LogError(r, err, h.r.Logger())
+			h.r.OAuth2Provider().WriteIntrospectionError(ctx, w, err)
+			return
+		}
+
+		token = r.PostForm.Get("token")
+		tokenType = r.PostForm.Get("token_type_hint")
+		scope = r.PostForm.Get("scope")
+	}
 
 	tt, ar, err := h.r.OAuth2Provider().IntrospectToken(ctx, token, fosite.TokenType(tokenType), session, strings.Split(scope, " ")...)
 	if err != nil {
