@@ -751,6 +751,7 @@ func (h *Handler) introspectOAuth2Token(w http.ResponseWriter, r *http.Request, 
 		x.LogAudit(r, err, h.r.Logger())
 		err := errorsx.WithStack(fosite.ErrInactiveToken.WithHint("An introspection strategy indicated that the token is inactive.").WithDebug(err.Error()))
 		w.Header().Set("X-Token-Active", "false")
+		w.WriteHeader(http.StatusUnauthorized)
 		h.r.OAuth2Provider().WriteIntrospectionError(ctx, w, err)
 		return
 	}
