@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -790,6 +791,8 @@ func (h *Handler) introspectOAuth2Token(w http.ResponseWriter, r *http.Request, 
 
 	w.Header().Set("Content-Type", "application/json;charset=UTF-8")
 	w.Header().Set("X-Client-ID", resp.GetAccessRequester().GetClient().GetID())
+	w.Header().Set("X-Client-Active", strconv.FormatBool(resp.IsActive()))
+
 	if err = json.NewEncoder(w).Encode(&Introspection{
 		Active:            resp.IsActive(),
 		ClientID:          resp.GetAccessRequester().GetClient().GetID(),
